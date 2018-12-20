@@ -5,9 +5,9 @@ clear all; clc;
 format rat;
 
 %%% INSERISCI QUI LE TUE MATRICI %%%
-A=[-3 -1/2 -2;-10 1/2 -5;4 1 3];
-B=[-1;-2;2];
-C=[1 0 1];
+A=[3 1/2 -7/2;2 -2 -2;-1 1/2 1/2];
+B=[1;-1;2];
+C=[-1/2 3/2 1/2];
 %%% INSERISCI QUI LE TUE MATRICI %%%
 
 %%%come avete notato, valgono solo le 3x3%%
@@ -61,6 +61,9 @@ while rank(Xr)<rank(R) && k~=3
     k=k+1; %%controllo contro il loop infinito
 end
 
+if rank(Xr)==3             %%se il rango di Xr è 3 allora posso vederlo
+    Xr=[1 0 0;0 1 0;0 0 1]; %%come una base canonica 
+end
 
 fprintf('\nla matrice Xr è\n');
 disp(Xr);
@@ -145,28 +148,31 @@ autov=eig(Asegnato);
 %%colloco ogni autovalore al proprio sottosistema
 
 k=1;                %%inizializzo i vettori
-A11=[];             %%e le matrici
-A22=[];
-A33=[];
-A44=[];
 
 %%%scusate per la porcheria,ma almeno cosi funziona
 %%%questo è specifico per le 3x3
 if ~isempty(T1)
 A11=Asegnato(k:size(T1,2),k:size(T1,2));
+B1=Bsegnato(k:size(T1,2));
+C1=Csegnato(k:size(T1,2));
 k=k+size(A11,2);
 end
 if ~isempty(T2)
 A22=Asegnato(k:(k-1+size(T2,2)),k:(k-1+size(T2,2)));
+B2=Bsegnato(k:(k-1+size(T2,2)));
+C2=Csegnato(k:(k-1+size(T2,2)));
 k=k+size(A22,2);
 end
 if ~isempty(T3)
 A33=Asegnato(k:(k-1+size(T3,2)),k:(k-1+size(T3,2)));
-k=k+size(A22,2);
+B3=Bsegnato(k:(k-1+size(T2,2)));
+C3=Csegnato(k:(k-1+size(T2,2)));
+k=k+size(A33,2);
 end
 if ~isempty(T4)
 A44=Asegnato(k:k-1+size(T4,2),k:k-1+size(T4,2));
-k=k+size(A22,2);
+B4=Bsegnato(k:(k-1+size(T2,2)));
+C4=Csegnato(k:(k-1+size(T2,2)));
 end
 
 
@@ -174,7 +180,7 @@ fprintf('\ngli autovaliri sono :\n\n\n')
 %%scrivo gli autovalori in ordine e come sono
 
 k=0;
-if ~isempty(A11)
+if ~isempty(T1)
     
     fprintf('raggiungibili non osservabili\n\n')
     for j=1:size(A11,2)
@@ -186,9 +192,11 @@ if ~isempty(A11)
         end
     end
     k=k+j;
+else
+    clear T1;                               %per rendere più leggibili i risultati
 end
 
-if ~isempty(A22)
+if ~isempty(T2)
     
     fprintf('\n\nraggiungibili osservabili\n\n')
     for j=1:size(A22,2)
@@ -200,10 +208,12 @@ if ~isempty(A22)
         end
     end  
     k=k+j;
+else
+    clear T2;
 end
 
 
-if ~isempty(A33)
+if ~isempty(T3)
     
     fprintf('\n\nnon raggiungibili non osservabili\n\n')
     for j=1:size(A33,2)
@@ -215,9 +225,11 @@ if ~isempty(A33)
         end
     end  
     k=k+j;
+else
+    clear T3;
 end
 
-if ~isempty(A44)
+if ~isempty(T4)
     
     fprintf('\n\nnon raggiungibili osservabili\n\n')
     for j=1:size(A44,2)
@@ -228,7 +240,8 @@ if ~isempty(A44)
             fprintf('%s divergente\n',strtrim(rats(autov(k+j))))  %%in forma razionale
         end
     end 
-    k=k+j;
+else
+    clear T4;
 end
 
 %%trovo gli autovettori
@@ -242,6 +255,19 @@ for j=1:3
 end
 
 
-%%faccio un po' di pulizia per rendere più leggibili i risulati nella workspace
-clear i j k alfa I preintersezione sizepreint ;
 
+
+%%%trovo G(s) per la risposta
+if ~isempty(A22)
+    s=sym('s');
+    Gs=C2*1/((s*eye(size(A22,2)))-A22)*B2;
+    fprintf('G(s) per il calcolo della risposta è:\n\n')
+    disp(Gs)
+else
+    fprintf(['non posso trovare G(s) perchè il sistema raggiungibile',...
+    'e raggiungibile è vuoto'])
+end
+
+
+%%faccio un po' di pulizia per rendere più leggibili i risulati nella workspace
+clear i j k s alfa I preintersezione sizepreint autov;
