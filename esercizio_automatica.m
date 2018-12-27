@@ -165,14 +165,14 @@ k=k+size(A22,2);
 end
 if ~isempty(T3)
 A33=Asegnato(k:(k-1+size(T3,2)),k:(k-1+size(T3,2)));
-B3=Bsegnato(k:(k-1+size(T2,2)));
-C3=Csegnato(k:(k-1+size(T2,2)));
+B3=Bsegnato(k:(k-1+size(T3,2)));
+C3=Csegnato(k:(k-1+size(T3,2)));
 k=k+size(A33,2);
 end
 if ~isempty(T4)
 A44=Asegnato(k:k-1+size(T4,2),k:k-1+size(T4,2));
-B4=Bsegnato(k:(k-1+size(T2,2)));
-C4=Csegnato(k:(k-1+size(T2,2)));
+B4=Bsegnato(k:(k-1+size(T4,2)));
+C4=Csegnato(k:(k-1+size(T4,2)));
 end
 
 
