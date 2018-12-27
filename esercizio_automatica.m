@@ -5,10 +5,10 @@ clear all; clc;
 format rat;
 
 %%% INSERISCI QUI LE TUE MATRICI %%%
-A=[3 1/2 -7/2;2 -2 -2;-1 1/2 1/2];
-B=[1;-1;2];
-C=[-1/2 3/2 1/2];
-%%% INSERISCI QUI LE TUE MATRICI %%%
+A=[-3 -1/2 -2;-10 1/2 -5;4 1 3];
+B=[-1;-2;2];
+C=[1 0 1];
+
 
 %%%come avete notato, valgono solo le 3x3%%
 fprintf('se non lo hai ancora fatto, inserisci nell editor:')
@@ -126,8 +126,6 @@ end
 fprintf('\nla matrice T è:\n')
 disp(T)
 
-
-
 %trovo A B C segneti
 
 fprintf('\nla matrice A segnata è:\n')
@@ -145,101 +143,43 @@ disp(Csegnato)
 %%trovo gli autovaliri e gli autovettori                                    
 
 autov=eig(Asegnato);
+
+k=1; h=0; A11=[]; A22=[]; A33=[]; A44=[];
+q1=size(T1,2); q2=size(T2,2); 
+q4=size(T4,2); q3=size(T3,2);
+
 %%colloco ogni autovalore al proprio sottosistema
-
-k=1;                %%inizializzo i vettori
-
-%%%scusate per la porcheria,ma almeno cosi funziona
-%%%questo è specifico per le 3x3
-if ~isempty(T1)
-A11=Asegnato(k:size(T1,2),k:size(T1,2));
-B1=Bsegnato(k:size(T1,2));
-C1=Csegnato(k:size(T1,2));
-k=k+size(A11,2);
-end
-if ~isempty(T2)
-A22=Asegnato(k:(k-1+size(T2,2)),k:(k-1+size(T2,2)));
-B2=Bsegnato(k:(k-1+size(T2,2)));
-C2=Csegnato(k:(k-1+size(T2,2)));
-k=k+size(A22,2);
-end
-if ~isempty(T3)
-A33=Asegnato(k:(k-1+size(T3,2)),k:(k-1+size(T3,2)));
-B3=Bsegnato(k:(k-1+size(T2,2)));
-C3=Csegnato(k:(k-1+size(T2,2)));
-k=k+size(A33,2);
-end
-if ~isempty(T4)
-A44=Asegnato(k:k-1+size(T4,2),k:k-1+size(T4,2));
-B4=Bsegnato(k:(k-1+size(T2,2)));
-C4=Csegnato(k:(k-1+size(T2,2)));
-end
-
-
-fprintf('\ngli autovaliri sono :\n\n\n')
 %%scrivo gli autovalori in ordine e come sono
 
-k=0;
+fprintf('\ngli autovalori sono :\n\n\n')
 if ~isempty(T1)
-    
+    [A11,B1,C1,k]=calcolo_matrici(Asegnato,Bsegnato,Csegnato,k,q1);
     fprintf('raggiungibili non osservabili\n\n')
-    for j=1:size(A11,2)
-        
-        if autov(j)<=0
-           fprintf('%s convergente\n',strtrim(rats(autov(j))))%%fix per mandare 
-        else                                                 %%in output il numero 
-           fprintf('%s divergente\n',strtrim(rats(autov(j))))%%in forma razionale
-        end
-    end
-    k=k+j;
+    h=calcolo_autovalori(h,A11,autov);
 else
-    clear T1;                               %per rendere più leggibili i risultati
+    clear T1;
 end
 
 if ~isempty(T2)
-    
+    [A22,B2,C2,k]=calcolo_matrici(Asegnato,Bsegnato,Csegnato,k,q2);    
     fprintf('\n\nraggiungibili osservabili\n\n')
-    for j=1:size(A22,2)
-       
-        if autov(k+j)<=0
-            fprintf('%s convergente\n',strtrim(rats(autov(k+j)))) %%fix per mandare 
-        else                                                    %%in output il numero 
-            fprintf('%s divergente\n',strtrim(rats(autov(k+j))))  %%in forma razionale
-        end
-    end  
-    k=k+j;
+    h=calcolo_autovalori(h,A22,autov);
 else
     clear T2;
 end
 
-
 if ~isempty(T3)
-    
+    [A33,B3,C3,k]=calcolo_matrici(Asegnato,Bsegnato,Csegnato,k,q3);
     fprintf('\n\nnon raggiungibili non osservabili\n\n')
-    for j=1:size(A33,2)
-        
-        if autov(k+j)<=0
-            fprintf('%s convergente\n',strtrim(rats(autov(k+j)))) %%fix per mandare 
-        else                                                      %%in output il numero 
-            fprintf('%s divergente\n',strtrim(rats(autov(k+j))))  %%in forma razionale
-        end
-    end  
-    k=k+j;
+    h=calcolo_autovalori(h,A11,autov);
 else
     clear T3;
 end
 
 if ~isempty(T4)
-    
+    [A44,B4,C4,k]=calcolo_matrici(Asegnato,Bsegnato,Csegnato,k,q4);
     fprintf('\n\nnon raggiungibili osservabili\n\n')
-    for j=1:size(A44,2)
-        
-        if autov(k+j)<=0
-            fprintf('%s convergente\n',strtrim(rats(autov(k+j)))) %%fix per mandare 
-        else                                                      %%in output il numero 
-            fprintf('%s divergente\n',strtrim(rats(autov(k+j))))  %%in forma razionale
-        end
-    end 
+    h=calcolo_autovalori(h,A44,autov);
 else
     clear T4;
 end
@@ -254,9 +194,6 @@ for j=1:3
    disp(T*(null((autov(j,1)*I)-Asegnato,'r')))
 end
 
-
-
-
 %%%trovo G(s) per la risposta
 if ~isempty(A22)
     s=sym('s');
@@ -268,6 +205,24 @@ else
     'e raggiungibile è vuoto'])
 end
 
-
 %%faccio un po' di pulizia per rendere più leggibili i risulati nella workspace
-clear i j k s alfa I preintersezione sizepreint autov;
+
+clear q1 q2 q3 q4 i j k s alfa I preintersezione sizepreint autov h;
+
+function [Ax,By,Cz,k]=calcolo_matrici(Asegnato,Bsegnato,Csegnato,k,q)
+    Ax=Asegnato(k:k-1+q,k:k-1+q);
+    By=Bsegnato(k:k-1+q);
+    Cz=Csegnato(k:k-1+q);
+    k=k+q;
+end
+
+function k=calcolo_autovalori(k,I,autov)
+    for j=1:size(I,2)
+       if autov(j+k)<=0
+           fprintf('%s convergente\n',strtrim(rats(autov(j+k))))%%fix per mandare 
+        else                                                 %%in output il numero 
+           fprintf('%s divergente\n',strtrim(rats(autov(j+k))))%%in forma razionale
+        end
+    end
+    k=j;
+end
