@@ -1,6 +1,9 @@
-%%by jacopo ferretti
-%%17/12/18
+%%by jacopo ferretti and samuele leli
+%%04/01/18
 %%enjoy!
+clear all; clc;
+format rat;
+
 clear all; clc;
 format rat;
 
@@ -63,6 +66,9 @@ end
 
 if rank(Xr)==3             %%se il rango di Xr è 3 allora posso vederlo
     Xr=[1 0 0;0 1 0;0 0 1]; %%come una base canonica 
+    ragg=1;
+else
+    ragg=0;
 end
 
 fprintf('\nla matrice Xr è\n');
@@ -124,10 +130,10 @@ for j=1:3
 end 
 %%% ho trovato la matrice T=[T1 T2 T3 T4]
 fprintf('\nla matrice T è:\n')
+
 disp(T)
-
+disp(inv(T));
 %trovo A B C segneti
-
 fprintf('\nla matrice A segnata è:\n')
 Asegnato=inv(T)*A*T;
 disp(Asegnato)
@@ -144,42 +150,51 @@ disp(Csegnato)
 
 autov=eig(Asegnato);
 
-k=1; h=0; A11=[]; A22=[]; A33=[]; A44=[];
-q1=size(T1,2); q2=size(T2,2); 
-q4=size(T4,2); q3=size(T3,2);
+k=1; h=0;
+ div1=0; div2=0; div3=0; div4=0;
 
 %%colloco ogni autovalore al proprio sottosistema
 %%scrivo gli autovalori in ordine e come sono
 
 fprintf('\ngli autovalori sono :\n\n\n')
 if ~isempty(T1)
+    q1=size(T1,2);
     [A11,B1,C1,k]=calcolo_matrici(Asegnato,Bsegnato,Csegnato,k,q1);
-    fprintf('raggiungibili non osservabili\n\n')
-    h=calcolo_autovalori(h,A11,autov);
+    fprintf('raggiungibili non osservabili\n\n');
+    [h,div1]=calcolo_autovalori(h,A11,autov);
 else
     clear T1;
 end
 
 if ~isempty(T2)
+    q2=size(T2,2);
     [A22,B2,C2,k]=calcolo_matrici(Asegnato,Bsegnato,Csegnato,k,q2);    
-    fprintf('\n\nraggiungibili osservabili\n\n')
-    h=calcolo_autovalori(h,A22,autov);
+    fprintf('\n\nraggiungibili osservabili\n\n');
+    [h,div2]=calcolo_autovalori(h,A22,autov);
+    if div2==0 
+        fprintf('\nil sistema è stabilizzabile esternamente');
+    else
+        fprintf('\nil sistema non è stabilizzabile esternamente');
+    end
 else
     clear T2;
 end
 
 if ~isempty(T3)
+    q3=size(T3,2);
     [A33,B3,C3,k]=calcolo_matrici(Asegnato,Bsegnato,Csegnato,k,q3);
-    fprintf('\n\nnon raggiungibili non osservabili\n\n')
-    h=calcolo_autovalori(h,A11,autov);
+    fprintf('\n\nnon raggiungibili non osservabili\n\n');
+    [h,div3]=calcolo_autovalori(h,A33,autov);
+     
 else
     clear T3;
 end
 
 if ~isempty(T4)
+    q4=size(T4,2);
     [A44,B4,C4,k]=calcolo_matrici(Asegnato,Bsegnato,Csegnato,k,q4);
-    fprintf('\n\nnon raggiungibili osservabili\n\n')
-    h=calcolo_autovalori(h,A44,autov);
+    fprintf('\n\nnon raggiungibili osservabili\n\n');
+    [h,div4]=calcolo_autovalori(h,A44,autov);
 else
     clear T4;
 end
@@ -197,7 +212,7 @@ end
 %%%trovo G(s) per la risposta
 if ~isempty(A22)
     s=sym('s');
-    Gs=C2*1/((s*eye(size(A22,2)))-A22)*B2;
+    Gs=C2*inv(((s*eye(size(A22,2))))-A22)*B2;
     fprintf('G(s) per il calcolo della risposta è:\n\n')
     disp(Gs)
 else
@@ -205,9 +220,42 @@ else
     'e raggiungibile è vuoto'])
 end
 
+%creo feedback dallo stato
+%se i modi non eccitabili sono convergenti
+%e trovo K tale per cui il sistema ha l'autovalore scelto dall'utente
+
+sel=0;
+
+
+if ((div3 || div4) == 0) || ragg==1          
+      while sel>=0 && sel<=5    
+         fprintf('\nè possibile applicare un feedback dallo stato');
+         fprintf('\nscegliere il sotto sistema da modificare:');
+         fprintf('\n1-Modifica A11');
+         fprintf('\n2-Modifica A22');
+         fprintf('\n3-Modifica A33');
+         fprintf('\n4-Modifica A44');
+         fprintf('\n5-Esci');
+         sel=input('\nsel= ');
+         switch(sel)
+            case 1
+                allocazione_stato(A11,B1);
+            case 2
+                allocazione_stato(A22,B2);
+            case 3
+                allocazione_stato(A33,B3);
+            case 4
+                allocazione_stato(A44,B4);
+            case 5
+               break;
+         end 
+      end 
+ else
+        fprintf('non è possibile applicare un feedback dallo stato');     
+end    
 %%faccio un po' di pulizia per rendere più leggibili i risulati nella workspace
 
-clear q1 q2 q3 q4 i j k s alfa I preintersezione sizepreint autov h;
+clear q1 q2 q3 q4 i j k s alfa I preintersezione sizepreint  autov;
 
 function [Ax,By,Cz,k]=calcolo_matrici(Asegnato,Bsegnato,Csegnato,k,q)
     Ax=Asegnato(k:k-1+q,k:k-1+q);
@@ -216,13 +264,29 @@ function [Ax,By,Cz,k]=calcolo_matrici(Asegnato,Bsegnato,Csegnato,k,q)
     k=k+q;
 end
 
-function k=calcolo_autovalori(k,I,autov)
-    for j=1:size(I,2)
+function [k,div]=calcolo_autovalori(k,I,autov)
+     div=0;
+     for j=1:size(I,2)
        if autov(j+k)<=0
-           fprintf('%s convergente\n',strtrim(rats(autov(j+k))))%%fix per mandare 
-        else                                                 %%in output il numero 
-           fprintf('%s divergente\n',strtrim(rats(autov(j+k))))%%in forma razionale
-        end
-    end
-    k=j;
+           fprintf('%s convergente\n',strtrim(rats(autov(j+k))))%%fix per mandare               
+           
+       else                                                 %%in output il numero 
+           fprintf('%s divergente\n',strtrim(rats(autov(j+k))))%%in forma razionale      
+           div=div+1;
+       end
+     end
+     k=j+k;
+end
+function allocazione_stato(A,B)
+     d=input('quanti modi vuoi allocare?');
+     k = sym('k',[1,d]);
+     fprintf('\nEspressione del feedback: F=k*x ');
+     for i=1:d
+        a(i)=input('\nmodo da allocare: ');
+        eq(i)=det(eye(d)*a(i)-(A+B*k)) == 0;
+     end
+       [E,D] = equationsToMatrix(eq,k);
+       fprintf('i valori di k che permettono di allocare gli autovalori scelti sono: \n') 
+       k=linsolve(E,D);
+       disp(k);
 end
